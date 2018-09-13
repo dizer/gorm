@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erikstmartin/go-testdb"
+	testdb "github.com/erikstmartin/go-testdb"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mssql"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -930,6 +930,38 @@ func TestOpenWithOneParameter(t *testing.T) {
 	}
 	if err == nil {
 		t.Error("Open with one parameter returned err as nil")
+	}
+}
+
+func TestSaveAssociations2(t *testing.T) {
+	var (
+		err         error
+		loadedPlace Place
+	)
+	db := DB.New()
+	address := Address{Address1: "somewhere on earth"}
+	err = db.Create(&address).Error
+	if err != nil {
+		t.Errorf("failed to store address: %s", err.Error())
+	}
+
+	place := Place{
+		// PlaceAddressID: address.ID, // <- now its required to pass this ID
+		PlaceAddress: &address,
+	}
+
+	err = db.Create(&place).Error
+	if err != nil {
+		t.Errorf("failed to store place: %s", err.Error())
+	}
+
+	err = db.Find(&loadedPlace).Error
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if place.Id != int64(loadedPlace.PlaceAddressID) {
+		t.Errorf("PlaceAddressID not stored: %d != %d", place.Id, loadedPlace.PlaceAddressID)
 	}
 }
 
